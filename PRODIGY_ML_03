@@ -1,0 +1,45 @@
+import numpy as np
+import pandas as pd
+import cv2
+import os
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.svm import SVC
+from sklearn.metrics import classification_report
+from sklearn.pipeline import make_pipeline
+from PIL import Image
+
+# Define paths
+data_dir = '/path/to/dataset'  # Update this to the path of your dataset
+
+# Prepare the data
+def load_images(image_dir, num_samples=None):
+    images = []
+    labels = []
+    for label in ['cat', 'dog']:
+        label_dir = os.path.join(image_dir, label)
+        for filename in os.listdir(label_dir):
+            if num_samples and len(images) >= num_samples:
+                return np.array(images), np.array(labels)
+            filepath = os.path.join(label_dir, filename)
+            img = Image.open(filepath).convert('RGB')
+            img = img.resize((64, 64))  # Resize images to 64x64
+            img_array = np.array(img).flatten()  # Flatten the image
+            images.append(img_array)
+            labels.append(0 if label == 'cat' else 1)
+    return np.array(images), np.array(labels)
+
+# Load images and labels
+images, labels = load_images(data_dir, num_samples=1000)  # Load a subset for quick testing
+
+# Split the data into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(images, labels, test_size=0.2, random_state=42)
+
+# Create and train the SVM model
+model = make_pipeline(StandardScaler(), SVC(kernel='linear', random_state=42))
+model.fit(X_train, y_train)
+
+# Make predictions and evaluate the model
+y_pred = model.predict(X_test)
+print(classification_report(y_test, y_pred, target_names=['Cat', 'Dog']))
+
